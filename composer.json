@@ -1,5 +1,5 @@
 {
-    "name": "hayko/mongodb",
+    "name": "giginc/mongodb",
     "description": "An Mongodb datasource for CakePHP 3.0",
     "type": "cakephp-plugin",
     "require": {
@@ -14,8 +14,8 @@
     "license": "MIT",
     "authors": [
         {
-            "name": "tiaguinho",
-            "email": "tiaguinhocab@gmail.com"
+            "name": "giginc",
+            "email": "dev@giginc.co.jp"
         }
     ],
     "autoload": {
