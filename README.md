@@ -10,7 +10,7 @@ An Mongodb datasource for CakePHP 3.5
 Install [composer](http://getcomposer.org) and run:
 
 ```bash
-composer require giginc/mongodb 1.0
+composer require giginc/mongodb 1.0.0
 ```
 
 ## Connecting the Plugin to your application
