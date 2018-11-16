@@ -1,6 +1,6 @@
 <?php
 
-namespace Hayko\Mongodb\ORM;
+namespace Giginc\Mongodb\ORM;
 
 use Cake\Utility\Hash;
 use MongoDB\Collection;
