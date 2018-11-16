@@ -1,6 +1,6 @@
 <?php
 
-namespace Hayko\Mongodb\Database\Driver;
+namespace Giginc\Mongodb\Database\Driver;
 
 use Exception;
 use MongoDB\Driver\ReadPreference;

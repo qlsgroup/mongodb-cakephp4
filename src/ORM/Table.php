@@ -1,6 +1,6 @@
 <?php
 
-namespace Hayko\Mongodb\ORM;
+namespace Giginc\Mongodb\ORM;
 
 use ArrayObject;
 use BadMethodCallException;
@@ -23,8 +23,8 @@ class Table extends CakeTable
     private function __getCollection()
     {
         $driver = $this->getConnection()->getDriver();
-        if (!$driver instanceof \Hayko\Mongodb\Database\Driver\Mongodb) {
-            throw new \Exception("Driver must be an instance of 'Hayko\Mongodb\Database\Driver\Mongodb'");
+        if (!$driver instanceof \Giginc\Mongodb\Database\Driver\Mongodb) {
+            throw new \Exception("Driver must be an instance of 'Giginc\Mongodb\Database\Driver\Mongodb'");
         }
         $collection = $driver->getCollection($this->getTable());
 

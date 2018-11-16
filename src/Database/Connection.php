@@ -1,10 +1,10 @@
 <?php
 
-namespace Hayko\Mongodb\Database;
+namespace Giginc\Mongodb\Database;
 
 use Cake\Database\Exception\MissingConnectionException;
-use Hayko\Mongodb\Database\Driver\Mongodb as Haykodb;
-use Hayko\Mongodb\Database\Schema\MongoSchema;
+use Giginc\Mongodb\Database\Driver\Mongodb as Gigincdb;
+use Giginc\Mongodb\Database\Schema\MongoSchema;
 
 class Connection extends \Cake\Database\Connection
 {
@@ -19,7 +19,7 @@ class Connection extends \Cake\Database\Connection
     /**
      * Database Driver object
      *
-     * @var \Hayko\Mongodb\Database\Driver\Mongodb;
+     * @var \Giginc\Mongodb\Database\Driver\Mongodb;
      */
     protected $_driver = null;
 
@@ -70,14 +70,14 @@ class Connection extends \Cake\Database\Connection
     /**
      * @param null $driver
      * @param array $config
-     * @return Haykodb|resource
+     * @return Gigincdb|resource
      */
     public function driver($driver = null, $config = [])
     {
         if ($driver === null) {
             return $this->_driver;
         }
-        $this->_driver = new Haykodb($config);
+        $this->_driver = new Gigincdb($config);
 
         return $this->_driver;
     }

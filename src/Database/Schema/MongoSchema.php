@@ -1,8 +1,8 @@
 <?php
 
-namespace Hayko\Mongodb\Database\Schema;
+namespace Giginc\Mongodb\Database\Schema;
 
-use Hayko\Mongodb\Database\Driver\Mongodb;
+use Giginc\Mongodb\Database\Driver\Mongodb;
 use Cake\Database\Schema\TableSchema;
 
 class MongoSchema
