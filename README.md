@@ -10,7 +10,7 @@ An Mongodb datasource for CakePHP 3.5
 Install [composer](http://getcomposer.org) and run:
 
 ```bash
-composer require hayko/mongodb dev-master
+composer require giginc/mongodb 1.0
 ```
 
 ## Connecting the Plugin to your application
@@ -18,7 +18,7 @@ composer require hayko/mongodb dev-master
 add the following line in your config/bootstrap.php to tell your application to load the plugin:
 
 ```php
-Plugin::load('Hayko/Mongodb');
+Plugin::load('Giginc/Mongodb');
 
 ```
 
@@ -28,8 +28,8 @@ Now, you need to set the connection in your config/app.php file:
 ```php
  'Datasources' => [
     'default' => [
-        'className' => 'Hayko\Mongodb\Database\Connection',
-        'driver' => 'Hayko\Mongodb\Database\Driver\Mongodb',
+        'className' => 'Giginc\Mongodb\Database\Connection',
+        'driver' => 'Giginc\Mongodb\Database\Driver\Mongodb',
         'persistent' => false,
         'host' => 'localhost',
         'port' => 27017,
@@ -51,12 +51,12 @@ Now, you need to set the connection in your config/app.php file:
 If you want to connect to MongoDB using a SSH tunnel, you need to set additional variables in your Datasource. Some variables are unnecessary, depending on how you intend to connect. IF you're connecting using a SSH key file, the ```ssh_pubkey_path``` and ```ssh_privatekey_path``` variables are necessary and the ```ssh_password``` variable is unnecessary. If you're connecting using a text-based password (which is **not** a wise idea), the reverse is true. The function needs, at minimum, ```ssh_host```, ```ssh_user``` and one method of authentication to establish a SSH tunnel.
 
 ## Models
-After that, you need to load Hayko\Mongodb\ORM\Table in your tables class:
+After that, you need to load Giginc\Mongodb\ORM\Table in your tables class:
 
 ```php
 //src/Model/Table/YourTable.php
 
-use Hayko\Mongodb\ORM\Table;
+use Giginc\Mongodb\ORM\Table;
 
 class CategoriesTable extends Table {
 
