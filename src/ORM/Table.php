@@ -130,11 +130,15 @@ class Table extends CakeTable
      * @return int
      * @throws \Exception
      */
-    public function deleteAll($conditions)
+    public function deleteAll($conditions = null)
     {
         try {
             $collection = $this->__getCollection();
-            $query = new MongoFinder($collection, ['where' => $conditions]);
+            if (is_null($conditions)) {
+                $query = new MongoFinder($collection);
+            } else {
+                $query = new MongoFinder($collection, ['where' => $conditions]);
+            }
             $rows = $query->find(['projection' => ['_id' => 1]]);
             $ids = [];
             foreach ($rows as $row) {
