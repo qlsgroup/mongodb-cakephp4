@@ -41,7 +41,7 @@ class MongoFinderTest extends TestCase
     {
         parent::tearDown();
         $this->table->deleteAll([]);
-        TableRegistry::clear();
+        TableRegistry::getTableLocator()->clear();
     }
 
     public function testFind()
@@ -73,7 +73,7 @@ class MongoFinderTest extends TestCase
         $this->assertNotEmpty($this->table->find('all', ['where' => $condition]));
 
         $condition = [
-            'foo.bar' => new \MongoDB\BSON\Regex('^b.*z$', 'i')
+            'foo.bar' => new Regex('^b.*z$', 'i')
         ];
         $this->assertNotEmpty($this->table->find('all', ['where' => $condition]));
 
