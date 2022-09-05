@@ -63,7 +63,7 @@ class Document
 
                     default:
                         if ($value instanceof \MongoDB\BSON\Serializable) {
-                            $document[$field] = $value->bsonSerialize();
+                            $document[$field] = $this->serializeObjects($value);
                         } else {
                             throw new Exception(get_class($value) . ' conversion not implemented.');
                         }
@@ -78,5 +78,19 @@ class Document
         $inflector = new \Cake\Utility\Inflector();
         $entityName = '\\App\\Model\\Entity\\' . $inflector->singularize($this->_registryAlias);
         return new $entityName($document, ['markClean' => true, 'markNew' => false, 'source' => $this->_registryAlias]);
+    }
+
+    private function serializeObjects($obj)
+    {
+        if ($obj instanceof \MongoDB\BSON\Serializable) {
+            foreach ($obj as $field => $value) {
+                if ($value instanceof \MongoDB\BSON\Serializable) {
+                    $obj[$field] = $this->serializeObjects($value);
+                }
+            }
+            return $obj->bsonSerialize();
+        } else {
+            return $obj;
+        }
     }
 }
