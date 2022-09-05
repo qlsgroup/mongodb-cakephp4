@@ -68,8 +68,8 @@ class Connection extends \Cake\Database\Connection
     }
 
     /**
-     * @param null $driver driver
-     * @param array $config configuration
+     * @param null $driver
+     * @param array $config
      * @return Gigincdb|resource
      */
     public function driver($driver = null, $config = [])
@@ -85,14 +85,13 @@ class Connection extends \Cake\Database\Connection
     /**
      * connect to the database
      *
-     * @return bool
+     * @return boolean
      * @access public
      */
     public function connect()
     {
         try {
             $this->_driver->connect();
-
             return true;
         } catch (\Exception $e) {
             throw new MissingConnectionException(['reason' => $e->getMessage()]);
@@ -102,7 +101,7 @@ class Connection extends \Cake\Database\Connection
     /**
      * disconnect from the database
      *
-     * @return boole
+     * @return boolean
      * @access public
      */
     public function disconnect()

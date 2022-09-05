@@ -19,7 +19,7 @@ class MongoSchema
     /**
      * Constructor
      *
-     * @param Mongodb $conn connection
+     * @param Mongodb $conn
      * @access public
      */
     public function __construct(Mongodb $conn)
@@ -31,7 +31,7 @@ class MongoSchema
      * Describe
      *
      * @access public
-     * @param string $name describe
+     * @param $name
      * @return TableSchema
      */
     public function describe($name)
@@ -43,7 +43,7 @@ class MongoSchema
         $table = new TableSchema($name);
 
         if (empty($table->primaryKey())) {
-            $table->addColumn('_id', ['type' => 'string', 'default' => new ObjectId(), 'null' => false]);
+            $table->addColumn('_id', ['type' => 'string', 'default' => new \MongoDB\BSON\ObjectId(), 'null' => false]);
             $table->addConstraint('_id', ['type' => 'primary', 'columns' => ['_id']]);
         }
 

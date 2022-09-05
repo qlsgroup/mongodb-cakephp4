@@ -3,10 +3,7 @@
 namespace Giginc\Mongodb\ORM;
 
 use Cake\Utility\Hash;
-use MongoDB\BSON\ObjectId;
-use MongoDB\BSON\Regex;
 use MongoDB\Collection;
-use MongoDB\Driver\Cursor;
 
 class MongoFinder
 {
@@ -127,8 +124,8 @@ class MongoFinder
             } elseif (preg_match("/^(.+) ($operators)$/", $key, $matches)) {
                 list(, $field, $operator) = $matches;
                 if (substr($field, -3) === 'NOT') {
-                    $field = substr($field, 0, strlen($field) - 4);
-                    $operator = 'NOT ' . $operator;
+                    $field = substr($field, 0, strlen($field) -4);
+                    $operator = 'NOT '.$operator;
                 }
                 $operator = $this->__translateOperator(strtoupper($operator));
                 unset($conditions[$key]);
@@ -139,7 +136,7 @@ class MongoFinder
                         $value = "(?!$value)";
                     }
                     $operator = '$regex';
-                    $value = new Regex("^$value$", "i");
+                    $value = new \MongoDB\BSON\Regex("^$value$", "i");
                 }
                 $conditions[$field][$operator] = $value;
             } elseif (preg_match('/^OR|AND$/i', $key, $match)) {
@@ -165,7 +162,6 @@ class MongoFinder
                     ) {
                         $v = "this.$v";
                     }
-
                     return $v;
                 }, $matches));
             } elseif ($key === '_id' && is_string($value)) {
@@ -184,25 +180,16 @@ class MongoFinder
     private function __translateOperator($operator)
     {
         switch ($operator) {
-            case '<':
-                return '$lt';
-            case '<=':
-                return '$lte';
-            case '>':
-                return '$gt';
-            case '>=':
-                return '$gte';
-            case '=':
-                return '$eq';
+            case '<': return '$lt';
+            case '<=': return '$lte';
+            case '>': return '$gt';
+            case '>=': return '$gte';
+            case '=': return '$eq';
             case '!=':
-            case '<>':
-                return '$ne';
-            case 'NOT IN':
-                return '$nin';
-            case 'IN':
-                return '$in';
-            default:
-                return $operator;
+            case '<>': return '$ne';
+            case 'NOT IN': return '$nin';
+            case 'IN': return '$in';
+            default: return $operator;
         }
     }
 
@@ -210,7 +197,7 @@ class MongoFinder
      * try to find documents
      *
      * @param array $options
-     * @return Cursor $cursor
+     * @return \MongoDB\Driver\Cursor $cursor
      * @access public
      */
     public function find(array $options = [])
@@ -218,11 +205,7 @@ class MongoFinder
         $this->__sortOption($options);
         $this->__limitOption($options);
         $cursor = $this->connection()->find($this->_options['where'], $options);
-        if (is_array($cursor) || $cursor instanceof Countable) {
-            $this->_totalRows = count($cursor);
-        } else {
-            $this->_totalRows = 0;
-        }
+        $this->_totalRows = count($cursor);
 
         return $cursor;
     }
@@ -230,7 +213,7 @@ class MongoFinder
     /**
      * return all documents
      *
-     * @return Cursor
+     * @return \MongoDB\Driver\Cursor
      * @access public
      */
     public function findAll()
@@ -249,11 +232,12 @@ class MongoFinder
         $results = [];
         $keyField = isset($this->_options['keyField'])
             ? $this->_options['keyField']
-            : '_id';
-
+            : '_id'
+        ;
         $valueField = isset($this->_options['valueField'])
             ? $this->_options['valueField']
-            : 'name';
+            : 'name'
+        ;
 
         $cursor = $this->find(['projection' => [$keyField => 1, $valueField => 1]]);
         foreach (iterator_to_array($cursor) as $value) {
@@ -262,7 +246,6 @@ class MongoFinder
                 $results[$key] = (string)Hash::get((array)$value, $valueField, '');
             }
         }
-
         return $results;
     }
 
@@ -278,7 +261,6 @@ class MongoFinder
         $this->__sortOption($options);
         $result = $this->connection()->findOne($this->_options['where'], $options);
         $this->_totalRows = (int)((bool)$result);
-
         return $result;
     }
 
@@ -312,7 +294,7 @@ class MongoFinder
             && !empty($options['limit'])
             && !isset($options['skip'])
         ) {
-            $options['skip'] = $options['limit'] * ($this->_options['page'] - 1);
+            $options['skip'] = $options['limit'] * ($this->_options['page'] -1);
         }
     }
 
@@ -325,7 +307,7 @@ class MongoFinder
      */
     public function get($primaryKey)
     {
-        $this->_options['where']['_id'] = new ObjectId($primaryKey);
+        $this->_options['where']['_id'] = new \MongoDB\BSON\ObjectId($primaryKey);
 
         return $this->findFirst();
     }
