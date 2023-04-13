@@ -1,5 +1,5 @@
 {
-    "name": "giginc/mongodb",
+    "name": "ShockRaver/mongodb",
     "description": "An Mongodb datasource for CakePHP 3.0",
     "type": "cakephp-plugin",
     "require": {
