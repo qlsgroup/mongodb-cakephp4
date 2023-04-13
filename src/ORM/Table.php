@@ -7,6 +7,7 @@ use BadMethodCallException;
 use Cake\Chronos\ChronosInterface;
 use Cake\Datasource\EntityInterface;
 use Cake\Datasource\Exception\InvalidPrimaryKeyException;
+use Cake\I18n\FrozenTime;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table as CakeTable;
 use RuntimeException;
@@ -213,15 +214,11 @@ class Table extends CakeTable
         $data = $entity->toArray();
         $isNew = $entity->isNew();
 
-        //convert to mongodate
-        /** @var ChronosInterface $c */
         if (isset($data['created'])) {
-            $c = $data['created'];
-            $data['created']  = new \MongoDB\BSON\UTCDateTime(strtotime($c->toDateTimeString()));
+            $data['created'] = FrozenTime::now()->toIso8601String();
         }
         if (isset($data['modified'])) {
-            $c = $data['modified'];
-            $data['modified'] = new \MongoDB\BSON\UTCDateTime(strtotime($c->toDateTimeString()));
+            $data['modified'] = FrozenTime::now()->toIso8601String();
         }
 
         if ($isNew) {
