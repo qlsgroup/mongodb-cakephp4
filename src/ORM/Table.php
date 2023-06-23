@@ -214,8 +214,10 @@ class Table extends CakeTable
         $data = $entity->toArray();
         $isNew = $entity->isNew();
 
-        if (isset($data['created'])) {
+        if (!isset($data['created'])) {
             $data['created'] = FrozenTime::now()->toIso8601String();
+        } else {
+            $data['created'] = FrozenTime::parse($data['created'])->toIso8601String();
         }
         if (isset($data['modified'])) {
             $data['modified'] = FrozenTime::now()->toIso8601String();
