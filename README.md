@@ -1,9 +1,9 @@
 [![Slack](https://img.shields.io/badge/join%20the%20conversation-on%20slack-green.svg)](https://mongodb-cakephp3.slack.com/messages/general/)
 
-Mongodb for Cakephp3
+Mongodb for Cakephp4
 ========
 
-An Mongodb datasource for CakePHP 3.5
+An Mongodb datasource for CakePHP 4
 
 ## Installing via composer
 
