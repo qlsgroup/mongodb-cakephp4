@@ -213,15 +213,11 @@ class Table extends CakeTable
         $data = $entity->toArray();
         $isNew = $entity->isNew();
 
-        //convert to mongodate
-        /** @var ChronosInterface $c */
         if (isset($data['created'])) {
-            $c = $data['created'];
-            $data['created']  = new \MongoDB\BSON\UTCDateTime(strtotime($c->toDateTimeString()));
+            $data['created'] = new \MongoDB\BSON\UTCDateTime($data['created']);
         }
         if (isset($data['modified'])) {
-            $c = $data['modified'];
-            $data['modified'] = new \MongoDB\BSON\UTCDateTime(strtotime($c->toDateTimeString()));
+            $data['modified'] = new \MongoDB\BSON\UTCDateTime($data['modified']);
         }
 
         if ($isNew) {

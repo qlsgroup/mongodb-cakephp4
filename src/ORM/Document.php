@@ -2,7 +2,9 @@
 
 namespace Giginc\Mongodb\ORM;
 
+use Cake\Core\App;
 use Cake\ORM\Entity;
+use Cake\Utility\Inflector;
 use Exception;
 
 class Document
@@ -23,6 +25,13 @@ class Document
      * @access protected
      */
     protected $_registryAlias;
+
+    /**
+     * The name of the class that represent a single row for this table
+     *
+     * @var string
+     */
+    protected $_entityClass;
 
     /**
      * set document and table name
@@ -74,6 +83,27 @@ class Document
             }
         }
 
-        return new Entity($document, ['markClean' => true, 'markNew' => false, 'source' => $this->_registryAlias]);
+        /** $var EntityInterface $class */
+        $class = $this->getEntityClass();
+
+        return new $class($document, ['markClean' => true, 'markNew' => false, 'source' => $this->_registryAlias]);
+    }
+
+    public function getEntityClass()
+    {
+        if (!$this->_entityClass) {
+            $default = Entity::class;
+            $self = $this->_registryAlias;
+            $alias = Inflector::classify($self);
+
+            $class = App::className($alias, 'Model/Entity');
+            if (!$class) {
+                return $this->_entityClass = $default;
+            }
+
+            $this->_entityClass = $class;
+        }
+
+        return $this->_entityClass;
     }
 }
