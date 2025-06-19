@@ -2,6 +2,7 @@
   "name": "qlsgroup/cakephp-mongodb4",
   "description": "An Mongodb datasource for CakePHP 3 and 4",
   "type": "cakephp-plugin",
+  "version": "4.0.0",
   "require": {
     "php": "^8.2",
     "ext-mongodb": "*",
