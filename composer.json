@@ -1,5 +1,5 @@
 {
-  "name": "qlsgroup/cakephp-mongodb",
+  "name": "qlsgroup/cakephp-mongodb4",
   "description": "An Mongodb datasource for CakePHP 3 and 4",
   "type": "cakephp-plugin",
   "require": {
