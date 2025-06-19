@@ -4,27 +4,136 @@ namespace Giginc\Mongodb\ORM;
 
 use ArrayObject;
 use BadMethodCallException;
-use Cake\Chronos\ChronosInterface;
+use Cake\Core\App;
+use Cake\Core\Exception\CakeException;
 use Cake\Datasource\EntityInterface;
 use Cake\Datasource\Exception\InvalidPrimaryKeyException;
+use Cake\Datasource\RulesAwareTrait;
+use Cake\Event\EventDispatcherTrait;
+use Cake\ORM\Behavior;
+use Cake\ORM\Entity;
+use Cake\ORM\Exception\MissingEntityException;
 use Cake\ORM\RulesChecker;
-use Cake\ORM\Table as CakeTable;
+use Cake\Utility\Inflector;
+use Cake\Validation\ValidatorAwareTrait;
+use Exception;
+use Giginc\Mongodb\Database\MongoDb\Connection;
+use Giginc\Mongodb\Database\MongoDbConnectionManager;
+use InvalidArgumentException;
+use MongoDB\BSON\ObjectId;
 use RuntimeException;
+use function Cake\Core\namespaceSplit;
 
-class Table extends CakeTable
+class Table
 {
+    public const DEFAULT_VALIDATOR = 'default';
+    public const VALIDATOR_PROVIDER_NAME = 'table';
+    public const BUILD_VALIDATOR_EVENT = 'Model.buildValidator';
+
+    use EventDispatcherTrait;
+    use RulesAwareTrait;
+    use ValidatorAwareTrait;
+
+    private ?string $_table = null;
+    private ?string $_alias = null;
+    private Marshaller $marshaller;
+
+    private Connection $connection;
+    /** @var class-string  */
+    protected string $entityClass;
+    protected string $registryAlias;
+    protected BehaviorRegistry $behaviors;
+    private array $primaryKey = [];
+    /** @var string|string[]|null  */
+    protected string|array|null $displayField = null;
+
+    public static function defaultConnectionName(): string
+    {
+        return 'default';
+    }
+
+    public function __construct(array $config = [])
+    {
+        $this->marshaller = new Marshaller($this);
+        $this->behaviors = new BehaviorRegistry($this);
+
+        $this->initialize($config);
+    }
+
+    public function initialize(array $config): void
+    {
+
+    }
+
+    public function newEntity(array $data, array $options = []): EntityInterface
+    {
+        return (new Marshaller($this))->one($data, $options);
+    }
+
+    public function getConnection(): Connection
+    {
+        if (!isset($this->connection)) {
+            /** @var Connection $connection */
+            $connection = MongoDbConnectionManager::get(static::defaultConnectionName());
+            $this->connection = $connection;
+        }
+
+        return $this->connection;
+    }
+
+    public function getTable(): string
+    {
+        if ($this->_table === null) {
+            $table = namespaceSplit(static::class);
+            $table = substr(end($table), 0, -5) ?: $this->_alias;
+            if (!$table) {
+                throw new CakeException(
+                    'You must specify either the `alias` or the `table` option for the constructor.'
+                );
+            }
+            $this->_table = Inflector::underscore($table);
+        }
+
+        return $this->_table;
+    }
+
+    public function setTable(string $table): void
+    {
+        $this->_table = $table;
+    }
+
+    public function setAlias(string $alias): void
+    {
+        $this->_alias = $alias;
+    }
+
+    public function getAlias(): string
+    {
+        if ($this->_alias === null) {
+            $alias = namespaceSplit(static::class);
+            $alias = substr(end($alias), 0, -5) ?: $this->_table;
+            if (!$alias) {
+                throw new CakeException(
+                    'You must specify either the `alias` or the `table` option for the constructor.'
+                );
+            }
+            $this->_alias = $alias;
+        }
+
+        return $this->_alias;
+    }
 
     /**
      * return MongoCollection object
      *
      * @return \MongoDB\Collection
-     * @throws \Exception
+     * @throws Exception
      */
     private function __getCollection()
     {
         $driver = $this->getConnection()->getDriver();
         if (!$driver instanceof \Giginc\Mongodb\Database\Driver\Mongodb) {
-            throw new \Exception("Driver must be an instance of 'Giginc\Mongodb\Database\Driver\Mongodb'");
+            throw new Exception("Driver must be an instance of 'Giginc\Mongodb\Database\Driver\Mongodb'");
         }
         $collection = $driver->getCollection($this->getTable());
 
@@ -38,7 +147,7 @@ class Table extends CakeTable
      * @return bool
      * @access public
      */
-    public function hasField($field)
+    public function hasField(string $field): bool
     {
         return true;
     }
@@ -48,34 +157,31 @@ class Table extends CakeTable
      *
      * @param string $type
      * @param array $options
-     * @return \Cake\ORM\Entity|\Cake\ORM\Entity[]|MongoQuery
      * @access public
-     * @throws \Exception
+     * @throws Exception
      */
-    public function find($type = 'all', $options = [])
+    public function find(string $type = 'all', array $options = []): Query
     {
-        $query = new MongoFinder($this->__getCollection(), $options);
-        $method = 'find' . ucfirst($type);
-        if (method_exists($query, $method)) {
-            $alias = $this->getAlias();
-            $mongoCursor = $query->{$method}();
-            if ($mongoCursor instanceof \MongoDB\Model\BSONDocument) {
-                return (new Document($mongoCursor, $alias))->cakefy();
-            } elseif (is_null($mongoCursor) || is_array($mongoCursor)) {
-                return $mongoCursor;
-            }
-            $results = new ResultSet($mongoCursor, $alias);
+        return $this->callFinder($type, new Query($this->getConnection(), $this, $options), $options);
+    }
 
-            if (isset($options['whitelist'])) {
-                return new MongoQuery($results->toArray(), $query->count());
-            } else {
-                return $results->toArray();
-            }
+    public function findAll(Query $query, array $options = []): Query
+    {
+        return $query;
+    }
+
+    public function callFinder(string $type, Query $query, array $options = []): Query
+    {
+        $finder = 'find' . $type;
+        if (method_exists($this, $finder)) {
+            return $this->$finder($query, $options);
         }
 
-        throw new BadMethodCallException(
-            sprintf('Unknown method "%s"', $method)
-        );
+        throw new BadMethodCallException(sprintf(
+            'Unknown finder "%s" in table "%s".',
+            $type,
+            static::class,
+        ));
     }
 
     /**
@@ -83,25 +189,14 @@ class Table extends CakeTable
      *
      * @param string $primaryKey
      * @param array $options
-     * @return \Cake\ORM\Entity
      * @access public
-     * @throws \Exception
+     * @throws Exception
      */
-    public function get($primaryKey, $options = [])
+    public function get($primaryKey, $options = []): EntityInterface
     {
-        $query = new MongoFinder($this->__getCollection(), $options);
-        $result = $query->get($primaryKey);
+        $query = new Query($this->getConnection(), $this, $options);
 
-        if ($result) {
-            $document = new Document($result, $this->getAlias());
-            return $document->cakefy();
-        }
-
-        throw new InvalidPrimaryKeyException(sprintf(
-            'Record not found in table "%s" with primary key [%s]',
-            $this->_table,
-            $primaryKey
-        ));
+        return $query->where(['_id' => new ObjectId($primaryKey)])->first();
     }
 
     /**
@@ -112,13 +207,13 @@ class Table extends CakeTable
      * @return bool
      * @access public
      */
-    public function delete(EntityInterface $entity, $options = [])
+    public function delete(EntityInterface $entity, $options = []): bool
     {
         try {
             $collection = $this->__getCollection();
-            $delete = $collection->deleteOne(['_id' => new \MongoDB\BSON\ObjectId($entity->_id)]);
+            $delete = $collection->deleteOne(['_id' => new ObjectId($entity->_id)], $options);
             return (bool)$delete->getDeletedCount();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             trigger_error($e->getMessage());
             return false;
         }
@@ -128,25 +223,16 @@ class Table extends CakeTable
      * delete all rows matching $conditions
      * @param $conditions
      * @return int
-     * @throws \Exception
+     * @throws Exception
      */
-    public function deleteAll($conditions = null)
+    public function deleteAll($conditions = null): int
     {
         try {
-            $collection = $this->__getCollection();
-            if (is_null($conditions)) {
-                $query = new MongoFinder($collection);
-            } else {
-                $query = new MongoFinder($collection, ['where' => $conditions]);
-            }
-            $rows = $query->find(['projection' => ['_id' => 1]]);
-            $ids = [];
-            foreach ($rows as $row) {
-                $ids[] = $row->_id;
-            }
-            $delete = $collection->deleteMany(['_id' => ['$in' => $ids]]);
+            $query = new Query($this->getConnection(), $this);
+
+            $delete = $query->deleteMany($conditions);
             return $delete->getDeletedCount();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             trigger_error($e->getMessage());
             return false;
         }
@@ -159,14 +245,14 @@ class Table extends CakeTable
      * @param array $options
      * @return mixed $success
      * @access public
-     * @throws \Exception
+     * @throws Exception
      */
     public function save(EntityInterface $entity, $options = [])
     {
         $options = new ArrayObject($options + [
             'checkRules' => true,
             'checkExisting' => true,
-            '_primary' => true
+            '_primary' => true,
         ]);
 
         if ($entity->getErrors()) {
@@ -196,7 +282,7 @@ class Table extends CakeTable
      * @param array|ArrayObject $options
      * @return mixed $success
      * @access protected
-     * @throws \Exception
+     * @throws Exception
      */
     protected function _processSave($entity, $options)
     {
@@ -207,7 +293,7 @@ class Table extends CakeTable
 
         $event = $this->dispatchEvent('Model.beforeSave', compact('entity', 'options'));
         if ($event->isStopped()) {
-            return $event->result;
+            return $event->getResult();
         }
 
         $data = $entity->toArray();
@@ -238,7 +324,7 @@ class Table extends CakeTable
         }
 
         if (!$success && $isNew) {
-            $entity->unsetProperty($this->getPrimaryKey());
+            $entity->unset($this->getPrimaryKey());
             $entity->isNew(true);
         }
 
@@ -250,17 +336,17 @@ class Table extends CakeTable
     }
 
     /**
-     * insert new document
+     * Insert new document
      *
      * @param EntityInterface $entity
      * @param array $data
      * @return mixed $success
      * @access protected
-     * @throws \Exception
+     * @throws Exception
      */
     protected function _insert($entity, $data)
     {
-        $primary = (array)$this->getPrimaryKey();
+        $primary = $this->getPrimaryKey();
         if (empty($primary)) {
             $msg = sprintf(
                 'Cannot insert row in "%s" table, it has no primary key.',
@@ -278,33 +364,33 @@ class Table extends CakeTable
             return $success;
         }
 
-        $success = $entity;
-        $collection = $this->__getCollection();
+        $query = new Query($this->getConnection(), $this);
 
-        if (is_object($collection)) {
-            $result = $collection->insertOne($data);
-            if ($result->isAcknowledged()) {
-                $entity->set('_id', $result->getInsertedId());
-            }
+
+        $success = $entity;
+        $result = $query->insertOne($data);
+        if ($result->isAcknowledged()) {
+            $entity->set('_id', $result->getInsertedId());
         }
         return $success;
     }
 
     /**
-     * update one document
+     * Update one document
      *
      * @param EntityInterface $entity
      * @param array $data
      * @return mixed $success
      * @access protected
-     * @throws \Exception
+     * @throws Exception
      */
     protected function _update($entity, $data)
     {
+        $query = new Query($this->getConnection(), $this);
         unset($data['_id']);
-        $update = $this->__getCollection()->updateOne(
-            ['_id' => new \MongoDB\BSON\ObjectId($entity->_id)],
-            ['$set' => $data]
+        $update = $query->updateOne(
+            ['$set' => $data],
+            ['_id' => new ObjectId($entity->_id)],
         );
         return (bool)$update->getModifiedCount();
     }
@@ -313,24 +399,14 @@ class Table extends CakeTable
      * Update $fields for rows matching $conditions
      * @param array $fields
      * @param array $conditions
-     * @return bool|int|null
      */
-    public function updateAll($fields, $conditions)
+    public function updateAll($fields, $conditions): int
     {
         try {
-            $collection = $this->__getCollection();
-            $query = new MongoFinder($collection, ['where' => $conditions]);
-            $rows = $query->find(['projection' => ['_id' => 1]]);
-            $ids = [];
-            foreach ($rows as $row) {
-                $ids[] = $row->_id;
-            }
-            $data = [
-                '$set' => $fields
-            ];
-            $update = $collection->updateMany(['_id' => ['$in' => $ids]], $data);
+            $query = new Query($this->getConnection(), $this);
+            $update = $query->updateMany($fields, $conditions);
             return $update->getModifiedCount();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             trigger_error($e->getMessage());
             return false;
         }
@@ -340,7 +416,7 @@ class Table extends CakeTable
      * create new MongoDB\BSON\ObjectId
      *
      * @param mixed $primary
-     * @return \MongoDB\BSON\ObjectId
+     * @return ObjectId
      * @access public
      */
     protected function _newId($primary)
@@ -349,6 +425,139 @@ class Table extends CakeTable
             return null;
         }
 
-        return new \MongoDB\BSON\ObjectId();
+        return new ObjectId();
+    }
+
+    /**
+     * @return class-string<EntityInterface>
+     */
+    public function getEntityClass(): string
+    {
+        if (empty($this->entityClass)) {
+            $default = Entity::class;
+            $self = static::class;
+            $parts = explode('\\', $self);
+
+            if ($self === self::class || count($parts) < 3) {
+                return $this->entityClass = $default;
+            }
+
+            $alias = Inflector::classify(Inflector::underscore(substr(array_pop($parts), 0, -5)));
+            $name = implode('\\', array_slice($parts, 0, -1)) . '\\Entity\\' . $alias;
+            if (!class_exists($name)) {
+                return $this->entityClass = $default;
+            }
+
+            /** @var class-string<\Cake\Datasource\EntityInterface>|null $class */
+            $class = App::className($name, 'Model/Entity');
+            if (!$class) {
+                throw new MissingEntityException([$name]);
+            }
+
+            $this->entityClass = $class;
+        }
+
+        return $this->entityClass;
+    }
+
+    public function getRegistryAlias(): string
+    {
+        if (empty($this->registryAlias)) {
+            $this->registryAlias = $this->getAlias();
+        }
+
+        return $this->registryAlias;
+    }
+
+    /**
+     * @return $this
+     * @throws Exception
+     */
+    public function addBehavior(string $name, array $options = []): self
+    {
+        $this->behaviors->load($name, $options);
+
+        return $this;
+    }
+
+    public function addBehaviors(array $behaviors): self
+    {
+        foreach ($behaviors as $name => $options) {
+            if (is_int($name)) {
+                $name = $options;
+                $options = [];
+            }
+
+            $this->addBehavior($name, $options);
+        }
+
+        return $this;
+    }
+
+    public function removeBehavior(string $name)
+    {
+        $this->behaviors->unload($name);
+
+        return $this;
+    }
+
+    public function behaviors(): BehaviorRegistry
+    {
+        return $this->behaviors;
+    }
+
+    public function getBehavior(string $name): Behavior
+    {
+        if (!$this->behaviors->has($name)) {
+            throw new InvalidArgumentException(sprintf(
+                'The %s behavior is not defined on %s.',
+                $name,
+                static::class
+            ));
+        }
+
+        return $this->behaviors->get($name);
+    }
+
+    public function hasBehavior(string $name): bool
+    {
+        return $this->behaviors->has($name);
+    }
+
+    public function getPrimaryKey(): array
+    {
+        return $this->primaryKey;
+    }
+
+    public function setPrimaryKey(array|string $primaryKey): self
+    {
+        if (is_string($primaryKey)) {
+            $primaryKey = [$primaryKey];
+        }
+
+        $this->primaryKey = $primaryKey;
+
+        return $this;
+    }
+
+    public function setDisplayField(string|array|null $displayField): self
+    {
+        $this->displayField = $displayField;
+
+        return $this;
+    }
+
+    public function getDisplayField(): string|array
+    {
+        if ($this->displayField !== null) {
+            return $this->displayField;
+        }
+
+        return $this->displayField = $this->getPrimaryKey();
+    }
+
+    public function getMarshaller(): Marshaller
+    {
+        return $this->marshaller;
     }
 }

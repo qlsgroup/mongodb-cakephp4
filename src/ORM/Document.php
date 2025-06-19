@@ -6,6 +6,7 @@ use Cake\Core\App;
 use Cake\ORM\Entity;
 use Cake\Utility\Inflector;
 use Exception;
+use Traversable;
 
 class Document
 {
@@ -13,10 +14,9 @@ class Document
     /**
      * store the document
      *
-     * @var array $_document
      * @access protected
      */
-    protected $_document;
+    protected iterable $_document;
 
     /**
      * table model name
@@ -24,23 +24,23 @@ class Document
      * @var string $_registryAlias
      * @access protected
      */
-    protected $_registryAlias;
+    protected string $_registryAlias;
 
     /**
      * The name of the class that represent a single row for this table
      *
-     * @var string
+     * @var class-string
      */
-    protected $_entityClass;
+    protected string $_entityClass;
 
     /**
      * set document and table name
      *
-     * @param array|\Traversable $document
+     * @param iterable $document
      * @param string $table
      * @access public
      */
-    public function __construct($document, $table)
+    public function __construct(iterable $document, string $table)
     {
         $this->_document = $document;
         $this->_registryAlias = $table;
@@ -89,7 +89,10 @@ class Document
         return new $class($document, ['markClean' => true, 'markNew' => false, 'source' => $this->_registryAlias]);
     }
 
-    public function getEntityClass()
+    /**
+     * @return class-string
+     */
+    public function getEntityClass(): string
     {
         if (!$this->_entityClass) {
             $default = Entity::class;

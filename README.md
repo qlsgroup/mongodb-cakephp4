@@ -28,7 +28,7 @@ Now, you need to set the connection in your config/app.php file:
 ```php
  'Datasources' => [
     'default' => [
-        'className' => 'Giginc\Mongodb\Database\Connection',
+        'className' => 'Giginc\Mongodb\Database\MongoDb\Connection',
         'driver' => 'Giginc\Mongodb\Database\Driver\Mongodb',
         'persistent' => false,
         'host' => 'localhost',
