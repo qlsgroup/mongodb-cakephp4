@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Giginc\Mongodb\ORM;
 
+use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\Datasource\ResultSetDecorator;
 use Cake\Datasource\ResultSetInterface;
 use Cake\I18n\FrozenTime;
@@ -207,9 +208,24 @@ class Query extends DatabaseQuery
         return $this->decorateResults($iterator);
     }
 
-    public function first(array $optoins = []) {
-        $options = array_merge($this->options, $optoins);
+    public function first(array $options = []) {
+        $options = array_merge($this->options, $options);
         $document = $this->getConnection()->findOne($this->table->getTable(), $this->expression->compile(), $this->translateOptions($options));
+
+        if ($document === null) {
+            return null;
+        }
+
+        return $this->table->getMarshaller()->one($document);
+    }
+
+    public function firstOrFail(array $options = []) {
+        $options = array_merge($this->options, $options);
+        $document = $this->getConnection()->findOne($this->table->getTable(), $this->expression->compile(), $this->translateOptions($options));
+
+        if ($document === null) {
+            return new RecordNotFoundException();
+        }
 
         return $this->table->getMarshaller()->one($document);
     }

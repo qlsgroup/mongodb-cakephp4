@@ -13,6 +13,7 @@ use Cake\Event\EventDispatcherTrait;
 use Cake\ORM\Behavior;
 use Cake\ORM\Entity;
 use Cake\ORM\Exception\MissingEntityException;
+use Cake\ORM\Exception\PersistenceFailedException;
 use Cake\ORM\RulesChecker;
 use Cake\Utility\Inflector;
 use Cake\Validation\ValidatorAwareTrait;
@@ -213,6 +214,24 @@ class Table
             $collection = $this->__getCollection();
             $delete = $collection->deleteOne(['_id' => new ObjectId($entity->_id)], $options);
             return (bool)$delete->getDeletedCount();
+        } catch (Exception $e) {
+            trigger_error($e->getMessage());
+            return false;
+        }
+    }
+
+    public function deleteOrFail(EntityInterface $entity, $options = []): bool
+    {
+        try {
+            $collection = $this->__getCollection();
+            $delete = $collection->deleteOne(['_id' => new ObjectId($entity->_id)], $options);
+            $count = $delete->getDeletedCount();
+
+            if ($count > 0) {
+                return $count;
+            }
+
+            throw new PersistenceFailedException($entity, ['delete']);
         } catch (Exception $e) {
             trigger_error($e->getMessage());
             return false;
