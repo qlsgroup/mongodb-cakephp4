@@ -295,6 +295,26 @@ class Table
     }
 
     /**
+     * save or fail the document
+     *
+     * @param EntityInterface $entity
+     * @param array $options
+     * @return mixed $success
+     * @access public
+     * @throws Exception
+     */
+    public function saveOrFail(EntityInterface $entity, $options = [])
+    {
+        $success = $this->save($entity, $options);
+
+        if (false === $success) {
+            throw new PersistenceFailedException($entity, ['save']);
+        }
+
+        return $success;
+    }
+
+    /**
      * insert or update the document
      *
      * @param EntityInterface $entity
