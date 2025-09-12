@@ -10,6 +10,7 @@ use Cake\Datasource\EntityInterface;
 use Cake\Datasource\Exception\InvalidPrimaryKeyException;
 use Cake\Datasource\RulesAwareTrait;
 use Cake\Event\EventDispatcherTrait;
+use Cake\ORM\Association;
 use Cake\ORM\Behavior;
 use Cake\ORM\Entity;
 use Cake\ORM\Exception\MissingEntityException;
@@ -598,5 +599,15 @@ class Table
     public function getMarshaller(): Marshaller
     {
         return $this->marshaller;
+    }
+
+    public function hasAssociation(string $name): bool
+    {
+        return false;
+    }
+
+    public function findAssociation(string $name): ?Association
+    {
+        return null;
     }
 }
